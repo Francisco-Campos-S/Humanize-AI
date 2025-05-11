@@ -10,7 +10,7 @@ import { detectAiContent, DetectAiContentInput, DetectAiContentOutput } from '@/
 import { humanizeAiContent, HumanizeAiContentInput, HumanizeAiContentOutput } from '@/ai/flows/humanize-ai-content';
 import { useToast } from '@/hooks/use-toast';
 import { Loader } from '@/components/loader';
-import { ScanText, BotMessageSquare } from 'lucide-react'; // Added BotMessageSquare
+import { ScanText, BotMessageSquare } from 'lucide-react'; 
 
 export default function AIGuardPage() {
   const [inputText, setInputText] = React.useState('');
@@ -25,7 +25,6 @@ export default function AIGuardPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(e.target.value);
-    // Reset results if input changes to avoid stale data display
     setDetectionScore(null);
     setHumanizedText(null);
     setOriginalTextForComparison('');
@@ -38,16 +37,16 @@ export default function AIGuardPage() {
       return;
     }
     setIsLoadingDetection(true);
-    setDetectionScore(null); // Clear previous score during new detection
+    setDetectionScore(null); 
 
     try {
       const result: DetectAiContentOutput = await detectAiContent(inputText as DetectAiContentInput);
       setDetectionScore(result.aiDetectionScore);
     } catch (err) {
-      console.error("Detection error:", err);
+      console.error("Detection error in page:", err); // Added client-side logging
       const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during AI detection.";
       toast({ title: "Detection Error", description: errorMessage, variant: "destructive" });
-      setDetectionScore(null);
+      setDetectionScore(0); // Set to 0 on error so something is displayed
     } finally {
       setIsLoadingDetection(false);
     }
@@ -59,8 +58,8 @@ export default function AIGuardPage() {
       return;
     }
     setIsLoadingHumanizing(true);
-    setHumanizedText(null); // Clear previous humanized text
-    setOriginalTextForComparison(inputText); // Snapshot current input text
+    setHumanizedText(null); 
+    setOriginalTextForComparison(inputText); 
     setIsRewritten(null);
 
     try {
@@ -75,11 +74,11 @@ export default function AIGuardPage() {
         });
       }
     } catch (err) {
-      console.error("Humanizing error:", err);
+      console.error("Humanizing error in page:", err); // Added client-side logging
       const errorMessage = err instanceof Error ? err.message : "An unknown error occurred while humanizing text.";
       toast({ title: "Humanization Error", description: errorMessage, variant: "destructive" });
       setHumanizedText(null);
-      setOriginalTextForComparison(''); // Clear comparison text on error
+      setOriginalTextForComparison(''); 
       setIsRewritten(null);
     } finally {
       setIsLoadingHumanizing(false);

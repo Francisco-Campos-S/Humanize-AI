@@ -48,16 +48,19 @@ Be extremely critical and look for patterns such as:
 - Perfect grammar and spelling without common human imperfections (unless specifically designed to mimic them)
 - Use of common AI "filler" phrases or overly verbose explanations for simple concepts.
 
-You must output a score from 0 to 100, where 0 means absolutely certain it is human-written, and 100 means absolutely certain it is AI-generated.
-Base your score on the strength of the AI-like characteristics you observe. Do not be hesitant to assign high scores if AI characteristics are evident.
-Provide only the score as per the output schema.
+You MUST respond with a JSON object. The JSON object must conform to the following Zod schema:
+{
+  "aiDetectionScore": "number (0-100, percentage likelihood of AI generation. 0 means certainly human, 100 means certainly AI)"
+}
+Provide only the JSON object. Do not add any explanatory text before or after the JSON.
 Even for short texts, provide your best assessment.
 `,
-  prompt: `Analyze the following text for AI generation signatures and provide your detection score:
+  prompt: `Analyze the following text for AI generation signatures and provide your detection score as a JSON object according to the specified schema:
 
 Text: {{{$input}}}`,
   config: {
-    temperature: 0.2, // Lower temperature for more deterministic analytical tasks
+    temperature: 0.1, // Lower temperature for more deterministic JSON output
+    responseMimeType: "application/json", // Request JSON output
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
@@ -83,15 +86,13 @@ const detectAiContentFlow = ai.defineFlow(
       } else {
         console.error(
           '[AIGuard - detectAiContentFlow] AI detection prompt returned invalid or missing score. Raw output:',
-          JSON.stringify(output) // Log the problematic output
+          JSON.stringify(output) 
         );
-        // If the output is not as expected, return a default score.
-        return { aiDetectionScore: 0 }; // Default to 0% if score is invalid/missing
+        return { aiDetectionScore: 0 }; 
       }
     } catch (error) {
       console.error('[AIGuard - detectAiContentFlow] Error during flow execution:', error);
-      // In case of an exception during the prompt call or processing
-      return { aiDetectionScore: 0 }; // Default to 0% on error
+      return { aiDetectionScore: 0 }; 
     }
   }
 );

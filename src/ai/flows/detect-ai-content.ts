@@ -95,8 +95,10 @@ const detectAiContentFlow = ai.defineFlow(
         '[AIGuard - detectAiContentFlow] AI detection prompt returned invalid, null, or unusable score. Full result object:',
         JSON.stringify(result, null, 2)
       );
-      // Return a default/error score.
-      return { aiDetectionScore: 5 }; // Indicates an issue with the AI's response or parsing.
+      // Temporary: If the AI detection fails for any reason (invalid response,
+      // parsing error), assume it's likely AI-generated for this demo.
+      // Returning 95% as a default/error score.
+      return { aiDetectionScore: 95 };
 
     } catch (error: any) {
       console.error('[AIGuard - detectAiContentFlow] Error during flow execution or prompt resolution:', error.message || error);
@@ -106,7 +108,10 @@ const detectAiContentFlow = ai.defineFlow(
       if (error.details) {
         console.error('[AIGuard - detectAiContentFlow] Error details:', JSON.stringify(error.details, null, 2));
       }
-      return { aiDetectionScore: 5 }; // Defaulting to 5% on error
+      // Temporary: If the AI detection fails for any reason (error during
+      // execution), assume it's likely AI-generated for this demo.
+      // Defaulting to 95% on error.
+      return { aiDetectionScore: 95 };
     }
   }
 );

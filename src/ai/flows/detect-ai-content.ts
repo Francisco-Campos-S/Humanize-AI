@@ -59,7 +59,7 @@ Even for short texts, provide your best assessment.
 
 Text: {{{$input}}}`,
   config: {
-    temperature: 0.1, 
+    temperature: 0.2, // Slightly increased temperature for more nuanced scores, but still low for consistency
     responseMimeType: "application/json", 
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
@@ -78,63 +78,34 @@ const detectAiContentFlow = ai.defineFlow(
   },
   async (textInput: DetectAiContentInput): Promise<DetectAiContentOutput> => {
     try {
-      // Call the prompt. 'result' should conform to DetectAiContentOutputSchema
-      // because detectAiContentPrompt is defined with output: {schema: DetectAiContentOutputSchema}
-      // and responseMimeType: "application/json" which should enforce this.
-      const result: DetectAiContentOutput | undefined = await detectAiContentPrompt(textInput);
+      // Correctly destructure 'output' from the prompt response
+      const { output: result } = await detectAiContentPrompt(textInput);
 
-      console.log('[AIGuard - detectAiContentFlow] Prompt result (expected DetectAiContentOutput):', JSON.stringify(result, null, 2));
+      console.log('[AIGuard - detectAiContentFlow] Prompt result:', JSON.stringify(result, null, 2));
 
       if (result && typeof result.aiDetectionScore === 'number' && !isNaN(result.aiDetectionScore)) {
         const score = Math.max(0, Math.min(100, Math.round(result.aiDetectionScore)));
-        console.log('[AIGuard - detectAiContentFlow] Score from direct number output:', score);
+        console.log('[AIGuard - detectAiContentFlow] Valid score received:', score);
         return { aiDetectionScore: score };
       }
       
-      // Fallback: if result.aiDetectionScore is a string (e.g., "75") that needs parsing
-      if (result && typeof (result as any).aiDetectionScore === 'string') {
-        const parsedScore = parseFloat((result as any).aiDetectionScore as string);
-        if (!isNaN(parsedScore)) {
-          const score = Math.max(0, Math.min(100, Math.round(parsedScore)));
-          console.log('[AIGuard - detectAiContentFlow] Score parsed from string value in output:', score);
-          return { aiDetectionScore: score };
-        }
-      }
-
-      // If we reach here, the 'result' object from the prompt did not contain a usable aiDetectionScore.
-      // This implies a deeper issue with the LLM's response or Genkit's JSON parsing/validation.
+      // If result is null/undefined or aiDetectionScore is not a valid number,
+      // it means the LLM response did not conform to the schema or was not parsable by Genkit.
       console.error(
-        '[AIGuard - detectAiContentFlow] AI detection prompt returned invalid or unusable score. Full result:',
+        '[AIGuard - detectAiContentFlow] AI detection prompt returned invalid, null, or unusable score. Full result object:',
         JSON.stringify(result, null, 2)
       );
-      // Defaulting to 5% as a noticeable "problem" score.
-      return { aiDetectionScore: 5 };
+      // Return a default/error score.
+      return { aiDetectionScore: 5 }; // Indicates an issue with the AI's response or parsing.
 
     } catch (error: any) {
-      // This catch block will handle errors from the prompt call itself (e.g., network issues, API errors)
-      // or if the prompt's response could not be coerced into DetectAiContentOutputSchema by Genkit
-      // (which might happen if the LLM returns malformed JSON or non-JSON text despite responseMimeType).
       console.error('[AIGuard - detectAiContentFlow] Error during flow execution or prompt resolution:', error.message || error);
       if (error.stack) {
         console.error(error.stack);
       }
-      // Log details if available (Genkit specific error structure might vary)
       if (error.details) {
         console.error('[AIGuard - detectAiContentFlow] Error details:', JSON.stringify(error.details, null, 2));
       }
-      // If the error object has a 'response' property (e.g. from an underlying HTTP client)
-      // it might contain the raw text from the LLM.
-      // This part is speculative as actual error structure can vary.
-      // if (error.response && typeof error.response.text === 'function') {
-      //   try {
-      //     const errorResponseText = await error.response.text();
-      //     console.error('[AIGuard - detectAiContentFlow] Raw error response text:', errorResponseText);
-      //   } catch (textError) {
-      //     console.error('[AIGuard - detectAiContentFlow] Could not get raw error response text:', textError);
-      //   }
-      // }
-
-
       return { aiDetectionScore: 5 }; // Defaulting to 5% on error
     }
   }

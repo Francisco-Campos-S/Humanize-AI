@@ -10,7 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z}from 'genkit';
 
 const DetectAiContentInputSchema = z
   .string()
@@ -73,15 +73,25 @@ const detectAiContentFlow = ai.defineFlow(
     inputSchema: DetectAiContentInputSchema,
     outputSchema: DetectAiContentOutputSchema,
   },
-  async input => {
-    const {output} = await detectAiContentPrompt(input);
-    // Ensure the score is within the 0-100 range, as LLMs can sometimes go slightly out of bounds.
-    if (output && typeof output.aiDetectionScore === 'number') {
-      output.aiDetectionScore = Math.max(0, Math.min(100, Math.round(output.aiDetectionScore)));
-    } else if (output) {
-        // Fallback if the score isn't a number, though the schema should prevent this.
-        output.aiDetectionScore = 0;
+  async (textInput: DetectAiContentInput): Promise<DetectAiContentOutput> => {
+    try {
+      const { output } = await detectAiContentPrompt(textInput);
+
+      if (output && typeof output.aiDetectionScore === 'number' && !isNaN(output.aiDetectionScore)) {
+        const score = Math.max(0, Math.min(100, Math.round(output.aiDetectionScore)));
+        return { aiDetectionScore: score };
+      } else {
+        console.error(
+          '[AIGuard - detectAiContentFlow] AI detection prompt returned invalid or missing score. Raw output:',
+          JSON.stringify(output) // Log the problematic output
+        );
+        // If the output is not as expected, return a default score.
+        return { aiDetectionScore: 0 }; // Default to 0% if score is invalid/missing
+      }
+    } catch (error) {
+      console.error('[AIGuard - detectAiContentFlow] Error during flow execution:', error);
+      // In case of an exception during the prompt call or processing
+      return { aiDetectionScore: 0 }; // Default to 0% on error
     }
-    return output!;
   }
 );

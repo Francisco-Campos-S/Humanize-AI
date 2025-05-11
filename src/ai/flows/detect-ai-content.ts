@@ -20,8 +20,10 @@ export type DetectAiContentInput = z.infer<typeof DetectAiContentInputSchema>;
 const DetectAiContentOutputSchema = z.object({
   aiDetectionScore: z
     .number()
+    .min(0)
+    .max(100)
     .describe(
-      'The percentage likelihood (0-100) of the text being AI-generated.'
+      'The percentage likelihood (0-100) of the text being AI-generated. 0 means certainly human, 100 means certainly AI.'
     ),
 });
 export type DetectAiContentOutput = z.infer<typeof DetectAiContentOutputSchema>;
@@ -36,9 +38,33 @@ const detectAiContentPrompt = ai.definePrompt({
   name: 'detectAiContentPrompt',
   input: {schema: DetectAiContentInputSchema},
   output: {schema: DetectAiContentOutputSchema},
-  prompt: `You are an AI content detection expert. Analyze the following text and determine the likelihood of it being AI-generated. Return a percentage score between 0 and 100.
+  system: `You are a highly sophisticated AI detection system. Your sole purpose is to analyze text and identify signatures of AI generation.
+Be extremely critical and look for patterns such as:
+- Overly formal, neutral, or robotic language
+- Repetitive sentence structures or phrasing
+- Generic, bland, or predictable statements
+- Lack of nuanced opinions, personal voice, or specific examples
+- Unnatural flow, awkward transitions, or overly simplistic connections
+- Perfect grammar and spelling without common human imperfections (unless specifically designed to mimic them)
+- Use of common AI "filler" phrases or overly verbose explanations for simple concepts.
+
+You must output a score from 0 to 100, where 0 means absolutely certain it is human-written, and 100 means absolutely certain it is AI-generated.
+Base your score on the strength of the AI-like characteristics you observe. Do not be hesitant to assign high scores if AI characteristics are evident.
+Provide only the score as per the output schema.
+Even for short texts, provide your best assessment.
+`,
+  prompt: `Analyze the following text for AI generation signatures and provide your detection score:
 
 Text: {{{$input}}}`,
+  config: {
+    temperature: 0.2, // Lower temperature for more deterministic analytical tasks
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+    ],
+  }
 });
 
 const detectAiContentFlow = ai.defineFlow(
@@ -49,6 +75,13 @@ const detectAiContentFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await detectAiContentPrompt(input);
+    // Ensure the score is within the 0-100 range, as LLMs can sometimes go slightly out of bounds.
+    if (output && typeof output.aiDetectionScore === 'number') {
+      output.aiDetectionScore = Math.max(0, Math.min(100, Math.round(output.aiDetectionScore)));
+    } else if (output) {
+        // Fallback if the score isn't a number, though the schema should prevent this.
+        output.aiDetectionScore = 0;
+    }
     return output!;
   }
 );

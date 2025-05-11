@@ -1,22 +1,39 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { detectAiContent, DetectAiContentInput, DetectAiContentOutput } from '@/ai/flows/detect-ai-content';
-import { humanizeAiContent, HumanizeAiContentInput, HumanizeAiContentOutput } from '@/ai/flows/humanize-ai-content';
-import { useToast } from '@/hooks/use-toast';
-import { Loader } from '@/components/loader';
-import { Copy, Check, ScanText, BotMessageSquare } from 'lucide-react'; // Add Copy and Check icons
-import Footer from '@/components/Footer';
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  detectAiContent,
+  DetectAiContentInput,
+  DetectAiContentOutput,
+} from "@/ai/flows/detect-ai-content";
+import {
+  humanizeAiContent,
+  HumanizeAiContentInput,
+  HumanizeAiContentOutput,
+} from "@/ai/flows/humanize-ai-content";
+import { useToast } from "@/hooks/use-toast";
+import { Loader } from "@/components/loader";
+import { Copy, Check, ScanText, BotMessageSquare } from "lucide-react"; // Add Copy and Check icons
+import Footer from "@/components/Footer";
 
 export default function AIGuardPage() {
-  const [inputText, setInputText] = React.useState('');
-  const [originalTextForComparison, setOriginalTextForComparison] = React.useState('');
-  const [detectionScore, setDetectionScore] = React.useState<number | null>(null);
+  const [inputText, setInputText] = React.useState("");
+  const [originalTextForComparison, setOriginalTextForComparison] =
+    React.useState("");
+  const [detectionScore, setDetectionScore] = React.useState<number | null>(
+    null
+  );
   const [humanizedText, setHumanizedText] = React.useState<string | null>(null);
   const [isRewritten, setIsRewritten] = React.useState<boolean | null>(null);
   const [isLoadingDetection, setIsLoadingDetection] = React.useState(false);
@@ -28,25 +45,38 @@ export default function AIGuardPage() {
     setInputText(e.target.value);
     setDetectionScore(null);
     setHumanizedText(null);
-    setOriginalTextForComparison('');
+    setOriginalTextForComparison("");
     setIsRewritten(null);
   };
 
   const handleDetectAI = async () => {
     if (!inputText.trim()) {
-      toast({ title: "Input Required", description: "Please enter some text to analyze.", variant: "default" });
+      toast({
+        title: "Input Required",
+        description: "Please enter some text to analyze.",
+        variant: "default",
+      });
       return;
     }
     setIsLoadingDetection(true);
-    setDetectionScore(null); 
+    setDetectionScore(null);
 
     try {
-      const result: DetectAiContentOutput = await detectAiContent(inputText as DetectAiContentInput);
+      const result: DetectAiContentOutput = await detectAiContent(
+        inputText as DetectAiContentInput
+      );
       setDetectionScore(result.aiDetectionScore);
     } catch (err) {
       console.error("Detection error in page:", err); // Added client-side logging
-      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during AI detection.";
-      toast({ title: "Detection Error", description: errorMessage, variant: "destructive" });
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "An unknown error occurred during AI detection.";
+      toast({
+        title: "Detection Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
       setDetectionScore(0); // Set to 0 on error so something is displayed
     } finally {
       setIsLoadingDetection(false);
@@ -55,31 +85,45 @@ export default function AIGuardPage() {
 
   const handleHumanize = async () => {
     if (!inputText.trim()) {
-      toast({ title: "Input Required", description: "Please enter some text to humanize.", variant: "default" });
+      toast({
+        title: "Input Required",
+        description: "Please enter some text to humanize.",
+        variant: "default",
+      });
       return;
     }
     setIsLoadingHumanizing(true);
-    setHumanizedText(null); 
-    setOriginalTextForComparison(inputText); 
+    setHumanizedText(null);
+    setOriginalTextForComparison(inputText);
     setIsRewritten(null);
 
     try {
-      const result: HumanizeAiContentOutput = await humanizeAiContent({ text: inputText } as HumanizeAiContentInput);
+      const result: HumanizeAiContentOutput = await humanizeAiContent({
+        text: inputText,
+      } as HumanizeAiContentInput);
       setHumanizedText(result.humanizedText);
       setIsRewritten(result.isRewritten);
-       if (result.isRewritten === false) {
+      if (result.isRewritten === false) {
         toast({
           title: "Content Unchanged",
-          description: "The AI determined the text already sounded human-like and did not require rewriting.",
+          description:
+            "The AI determined the text already sounded human-like and did not require rewriting.",
           variant: "default",
         });
       }
     } catch (err) {
       console.error("Humanizing error in page:", err); // Added client-side logging
-      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred while humanizing text.";
-      toast({ title: "Humanization Error", description: errorMessage, variant: "destructive" });
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "An unknown error occurred while humanizing text.";
+      toast({
+        title: "Humanization Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
       setHumanizedText(null);
-      setOriginalTextForComparison(''); 
+      setOriginalTextForComparison("");
       setIsRewritten(null);
     } finally {
       setIsLoadingHumanizing(false);
@@ -107,9 +151,15 @@ export default function AIGuardPage() {
     }
   };
 
+  const scrollToAnalyzeSection = () => {
+    const analyzeSection = document.getElementById('analyze-section');
+    if (analyzeSection) {
+      analyzeSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background via-background/95 to-accent/5">
-      {/* Navbar */}
       {/* Hero Section */}
       <section className="pt-32 pb-16 px-4">
         <div className="container mx-auto text-center">
@@ -117,27 +167,35 @@ export default function AIGuardPage() {
             AI Content Detection & Humanization
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Transform AI-generated content into natural, human-like text while preserving the original message. Powered by advanced AI detection technology.
+            Transform AI-generated content into natural, human-like text while
+            preserving the original message. Powered by advanced AI detection
+            technology.
           </p>
           <div className="flex justify-center gap-4">
-            <Button className="px-8 py-6 text-lg bg-primary hover:bg-primary/90">
+            <Button 
+              onClick={scrollToAnalyzeSection} 
+              className="px-8 py-6 text-lg bg-primary hover:bg-primary/90"
+            >
               Get Started
             </Button>
-            <Button variant="outline" className="px-8 py-6 text-lg">
-              Learn More
-            </Button>
+            <a href="/about">
+              <Button variant="outline" className="px-8 py-6 text-lg">
+                Learn More
+              </Button>
+            </a>
           </div>
         </div>
       </section>
 
       {/* Main Content */}
       <main className="flex-grow container mx-auto p-4 sm:p-6">
-        <div className="max-w-3xl mx-auto text-center mb-12">
+        <div id="analyze-section" className="max-w-3xl mx-auto text-center mb-12">
           <h2 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
             Detect & Humanize AI Content
           </h2>
           <p className="text-lg text-muted-foreground">
-            Transform AI-generated content into natural, human-like text while maintaining its core message.
+            Transform AI-generated content into natural, human-like text while
+            maintaining its core message.
           </p>
         </div>
 
@@ -148,7 +206,8 @@ export default function AIGuardPage() {
                 Analyze Your Text
               </CardTitle>
               <CardDescription className="text-muted-foreground/80">
-                Paste your text below to detect AI generation likelihood and humanize it.
+                Paste your text below to detect AI generation likelihood and
+                humanize it.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -161,30 +220,52 @@ export default function AIGuardPage() {
                 aria-label="Text input for AI analysis"
               />
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button 
-                  onClick={handleDetectAI} 
-                  disabled={!inputText.trim() || isLoadingDetection || isLoadingHumanizing} 
+                <Button
+                  onClick={handleDetectAI}
+                  disabled={
+                    !inputText.trim() ||
+                    isLoadingDetection ||
+                    isLoadingHumanizing
+                  }
                   className="w-full sm:flex-1 py-3 text-base"
                   aria-live="polite"
                 >
-                  {isLoadingDetection ? <Loader /> : <><ScanText className="mr-2 h-5 w-5" /> Detect AI</>}
+                  {isLoadingDetection ? (
+                    <Loader />
+                  ) : (
+                    <>
+                      <ScanText className="mr-2 h-5 w-5" /> Detect AI
+                    </>
+                  )}
                 </Button>
-                <Button 
-                  onClick={handleHumanize} 
-                  disabled={!inputText.trim() || isLoadingDetection || isLoadingHumanizing} 
+                <Button
+                  onClick={handleHumanize}
+                  disabled={
+                    !inputText.trim() ||
+                    isLoadingDetection ||
+                    isLoadingHumanizing
+                  }
                   className="w-full sm:flex-1 py-3 text-base bg-accent text-accent-foreground hover:bg-accent/90 focus:ring-accent"
                   aria-live="polite"
                 >
-                  {isLoadingHumanizing ? <Loader /> : 'Humanize Content'}
+                  {isLoadingHumanizing ? <Loader /> : "Humanize Content"}
                 </Button>
               </div>
-              
+
               {detectionScore !== null && (
                 <div className="mt-6 p-4 border border-accent/30 rounded-lg bg-accent/5 transition-all duration-300 ease-in-out">
-                  <h3 className="text-lg font-semibold text-accent mb-2">AI Detection Score</h3>
+                  <h3 className="text-lg font-semibold text-accent mb-2">
+                    AI Detection Score
+                  </h3>
                   <div className="flex items-center gap-3">
-                    <Progress value={detectionScore} className="w-full h-3 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-teal-400" aria-label={`AI Detection Score: ${detectionScore}%`} />
-                    <span className="text-xl font-bold text-accent">{detectionScore}%</span>
+                    <Progress
+                      value={detectionScore}
+                      className="w-full h-3 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-teal-400"
+                      aria-label={`AI Detection Score: ${detectionScore}%`}
+                    />
+                    <span className="text-xl font-bold text-accent">
+                      {detectionScore}%
+                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     Likelihood of the text being AI-generated.
@@ -200,27 +281,38 @@ export default function AIGuardPage() {
                 Comparison
               </CardTitle>
               <CardDescription className="text-muted-foreground/80">
-                View the original and humanized text side-by-side after processing.
+                View the original and humanized text side-by-side after
+                processing.
               </CardDescription>
             </CardHeader>
             <CardContent className="min-h-[300px] flex flex-col">
               {isLoadingHumanizing && !humanizedText && (
                 <div className="flex-grow flex flex-col justify-center items-center text-center p-4">
                   <Loader size="lg" className="text-primary mb-4" />
-                  <p className="text-muted-foreground">Humanizing content, please wait...</p>
+                  <p className="text-muted-foreground">
+                    Humanizing content, please wait...
+                  </p>
                 </div>
               )}
-              {!isLoadingHumanizing && humanizedText && originalTextForComparison ? (
+              {!isLoadingHumanizing &&
+              humanizedText &&
+              originalTextForComparison ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow">
                   <div>
-                    <h4 className="font-semibold mb-2 text-foreground">Original Text</h4>
+                    <h4 className="font-semibold mb-2 text-foreground">
+                      Original Text
+                    </h4>
                     <ScrollArea className="h-72 p-3 border rounded-md bg-muted/30 shadow-inner">
-                      <pre className="whitespace-pre-wrap text-sm font-mono">{originalTextForComparison}</pre>
+                      <pre className="whitespace-pre-wrap text-sm font-mono">
+                        {originalTextForComparison}
+                      </pre>
                     </ScrollArea>
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-semibold text-foreground">Humanized Text</h4>
+                      <h4 className="font-semibold text-foreground">
+                        Humanized Text
+                      </h4>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -236,7 +328,9 @@ export default function AIGuardPage() {
                       </Button>
                     </div>
                     <ScrollArea className="h-72 p-3 border rounded-md bg-background shadow-inner relative group">
-                      <pre className="whitespace-pre-wrap text-sm font-mono">{humanizedText}</pre>
+                      <pre className="whitespace-pre-wrap text-sm font-mono">
+                        {humanizedText}
+                      </pre>
                     </ScrollArea>
                     {isRewritten === false && (
                       <p className="text-xs text-center text-muted-foreground mt-2 italic">
@@ -245,16 +339,25 @@ export default function AIGuardPage() {
                     )}
                   </div>
                 </div>
-              ) : !isLoadingHumanizing && (
-                <div className="flex-grow flex flex-col justify-center items-center text-center p-4">
-                  <ScanText size={48} className="text-muted-foreground/50 mb-3" />
-                  <p className="text-muted-foreground">
-                    {inputText.trim() && !originalTextForComparison ? "Click 'Humanize' to see the rewritten version here." : "Results will appear here after humanizing text."}
-                  </p>
-                   {!inputText.trim() && (
-                     <p className="text-sm text-muted-foreground mt-1">Start by pasting text in the input area.</p>
-                   )}
-                </div>
+              ) : (
+                !isLoadingHumanizing && (
+                  <div className="flex-grow flex flex-col justify-center items-center text-center p-4">
+                    <ScanText
+                      size={48}
+                      className="text-muted-foreground/50 mb-3"
+                    />
+                    <p className="text-muted-foreground">
+                      {inputText.trim() && !originalTextForComparison
+                        ? "Click 'Humanize' to see the rewritten version here."
+                        : "Results will appear here after humanizing text."}
+                    </p>
+                    {!inputText.trim() && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Start by pasting text in the input area.
+                      </p>
+                    )}
+                  </div>
+                )
               )}
             </CardContent>
           </Card>

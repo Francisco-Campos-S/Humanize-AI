@@ -22,17 +22,14 @@ const Footer = () => {
               <h3 className="font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><a href="/features" className="hover:text-primary transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-primary transition-colors">Pricing</a></li>
-                <li><a href="#docs" className="hover:text-primary transition-colors">Documentation</a></li>
+                <li><a href="/how-it-works" className="hover:text-primary transition-colors">How It Works</a></li>
               </ul>
             </div>
 
             <div>
               <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#about" className="hover:text-primary transition-colors">About</a></li>
-                <li><a href="#blog" className="hover:text-primary transition-colors">Blog</a></li>
-                <li><a href="#careers" className="hover:text-primary transition-colors">Careers</a></li>
+                <li><a href="/about" className="hover:text-primary transition-colors">About</a></li>
               </ul>
             </div>
 
@@ -47,7 +44,7 @@ const Footer = () => {
 
           <div className="border-t border-accent/10 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              Made with ❤️ by <a href="https://github.com/prathamesh-mutkure" className="text-primary hover:text-accent transition-colors">Pratham Darji</a>
+              Made with ❤️ by <a href="https://github.com/Pratham-Prog861" className="text-primary hover:text-accent transition-colors">Pratham Darji</a>
             </p>
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} AIGuard. All rights reserved.

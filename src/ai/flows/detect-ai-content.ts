@@ -38,29 +38,44 @@ const detectAiContentPrompt = ai.definePrompt({
   name: 'detectAiContentPrompt',
   input: {schema: DetectAiContentInputSchema},
   output: {schema: DetectAiContentOutputSchema},
-  system: `You are a highly sophisticated AI detection system. Your sole purpose is to analyze text and identify signatures of AI generation.
-Be extremely critical and look for patterns such as:
-- Overly formal, neutral, or robotic language
-- Repetitive sentence structures or phrasing
-- Generic, bland, or predictable statements
-- Lack of nuanced opinions, personal voice, or specific examples
-- Unnatural flow, awkward transitions, or overly simplistic connections
-- Perfect grammar and spelling without common human imperfections (unless specifically designed to mimic them)
-- Use of common AI "filler" phrases or overly verbose explanations for simple concepts.
+  system: `You are a highly sophisticated AI detection system specialized in identifying AI-generated content with high accuracy. Your task is to analyze text and provide a precise percentage score indicating the likelihood of AI generation.
 
-You MUST respond with a JSON object. The JSON object must conform to the following Zod schema:
-{
-  "aiDetectionScore": "number (0-100, percentage likelihood of AI generation. 0 means certainly human, 100 means certainly AI)"
-}
-Provide only the JSON object. Do not add any explanatory text before or after the JSON.
-Even for short texts, provide your best assessment.
-`,
-  prompt: `Analyze the following text for AI generation signatures and provide your detection score as a JSON object according to the specified schema:
+Key analysis points:
+1. Language Patterns:
+   - Consistent, repetitive sentence structures
+   - Overly formal or mechanical language
+   - Perfect grammar and punctuation
+   - Generic or templated responses
+   - Lack of human errors or typos
+
+2. Content Characteristics:
+   - Comprehensive but generic explanations
+   - Systematic listing and organization
+   - Balanced and neutral tone
+   - Lack of personal anecdotes or unique perspectives
+   - Excessive use of transition phrases
+
+3. Technical Indicators:
+   - Predictable response structures
+   - Common AI-generated patterns
+   - Standardized formatting
+   - Consistent vocabulary usage
+
+Scoring Guidelines:
+- 80-100%: Highly likely AI-generated (perfect structure, formal tone, systematic organization)
+- 60-80%: Probably AI-generated (shows multiple AI patterns but with some variation)
+- 40-60%: Uncertain (mixed signals)
+- 20-40%: Likely human-written (shows natural imperfections and personality)
+- 0-20%: Very likely human-written (highly personal, unique style)
+
+You MUST respond with a JSON object containing only the aiDetectionScore (0-100).
+For AI-generated content, scores should typically range between 75-100.`,
+  prompt: `Analyze this text for AI generation patterns and provide your detection score. Be especially critical of formal, structured, and perfectly formatted content:
 
 Text: {{{$input}}}`,
   config: {
-    temperature: 0.2, // Slightly increased temperature for more nuanced scores, but still low for consistency
-    responseMimeType: "application/json", 
+    temperature: 0.1, // Lower temperature for more consistent scoring
+    responseMimeType: "application/json",
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
@@ -78,7 +93,6 @@ const detectAiContentFlow = ai.defineFlow(
   },
   async (textInput: DetectAiContentInput): Promise<DetectAiContentOutput> => {
     try {
-      // Correctly destructure 'output' from the prompt response
       const { output: result } = await detectAiContentPrompt(textInput);
 
       console.log('[AIGuard - detectAiContentFlow] Prompt result:', JSON.stringify(result, null, 2));
@@ -89,16 +103,8 @@ const detectAiContentFlow = ai.defineFlow(
         return { aiDetectionScore: score };
       }
       
-      // If result is null/undefined or aiDetectionScore is not a valid number,
-      // it means the LLM response did not conform to the schema or was not parsable by Genkit.
-      console.error(
-        '[AIGuard - detectAiContentFlow] AI detection prompt returned invalid, null, or unusable score. Full result object:',
-        JSON.stringify(result, null, 2)
-      );
-      // Temporary: If the AI detection fails for any reason (invalid response,
-      // parsing error), assume it's likely AI-generated for this demo.
-      // Returning 95% as a default/error score.
-      return { aiDetectionScore: 95 };
+      // Instead of defaulting to 95%, throw an error to be handled properly
+      throw new Error('Invalid response format from AI detection');
 
     } catch (error: any) {
       console.error('[AIGuard - detectAiContentFlow] Error during flow execution or prompt resolution:', error.message || error);
@@ -108,10 +114,8 @@ const detectAiContentFlow = ai.defineFlow(
       if (error.details) {
         console.error('[AIGuard - detectAiContentFlow] Error details:', JSON.stringify(error.details, null, 2));
       }
-      // Temporary: If the AI detection fails for any reason (error during
-      // execution), assume it's likely AI-generated for this demo.
-      // Defaulting to 95% on error.
-      return { aiDetectionScore: 95 };
+      // Instead of returning 95%, throw the error to be handled by the application
+      throw error;
     }
   }
 );

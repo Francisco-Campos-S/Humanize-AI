@@ -10,7 +10,8 @@ import { detectAiContent, DetectAiContentInput, DetectAiContentOutput } from '@/
 import { humanizeAiContent, HumanizeAiContentInput, HumanizeAiContentOutput } from '@/ai/flows/humanize-ai-content';
 import { useToast } from '@/hooks/use-toast';
 import { Loader } from '@/components/loader';
-import { ScanText, BotMessageSquare } from 'lucide-react'; 
+import { Copy, Check, ScanText, BotMessageSquare } from 'lucide-react'; // Add Copy and Check icons
+import Footer from '@/components/Footer';
 
 export default function AIGuardPage() {
   const [inputText, setInputText] = React.useState('');
@@ -85,21 +86,68 @@ export default function AIGuardPage() {
     }
   };
 
-  return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="p-4 sm:p-6 shadow-md sticky top-0 bg-background/80 backdrop-blur-md z-10">
-        <div className="container mx-auto flex items-center gap-2">
-          <BotMessageSquare className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl sm:text-3xl font-bold text-primary">AIGuard</h1>
-        </div>
-      </header>
+  const [hasCopied, setHasCopied] = React.useState(false);
 
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setHasCopied(true);
+      setTimeout(() => setHasCopied(false), 2000);
+      toast({
+        title: "Copied!",
+        description: "Text copied to clipboard",
+        variant: "default",
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background via-background/95 to-accent/5">
+      {/* Navbar */}
+      {/* Hero Section */}
+      <section className="pt-32 pb-16 px-4">
+        <div className="container mx-auto text-center">
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mb-6 animate-gradient">
+            AI Content Detection & Humanization
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+            Transform AI-generated content into natural, human-like text while preserving the original message. Powered by advanced AI detection technology.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button className="px-8 py-6 text-lg bg-primary hover:bg-primary/90">
+              Get Started
+            </Button>
+            <Button variant="outline" className="px-8 py-6 text-lg">
+              Learn More
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
       <main className="flex-grow container mx-auto p-4 sm:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-xl rounded-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl">Analyze Your Text</CardTitle>
-              <CardDescription>
+        <div className="max-w-3xl mx-auto text-center mb-12">
+          <h2 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
+            Detect & Humanize AI Content
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            Transform AI-generated content into natural, human-like text while maintaining its core message.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="shadow-2xl rounded-xl border border-accent/20 bg-gradient-to-br from-background to-accent/5 hover:shadow-accent/5 transition-all duration-300">
+            <CardHeader className="space-y-2">
+              <CardTitle className="text-2xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-bold">
+                Analyze Your Text
+              </CardTitle>
+              <CardDescription className="text-muted-foreground/80">
                 Paste your text below to detect AI generation likelihood and humanize it.
               </CardDescription>
             </CardHeader>
@@ -146,10 +194,12 @@ export default function AIGuardPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-xl rounded-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl">Comparison</CardTitle>
-              <CardDescription>
+          <Card className="shadow-2xl rounded-xl border border-accent/20 bg-gradient-to-br from-background to-accent/5 hover:shadow-accent/5 transition-all duration-300">
+            <CardHeader className="space-y-2">
+              <CardTitle className="text-2xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-bold">
+                Comparison
+              </CardTitle>
+              <CardDescription className="text-muted-foreground/80">
                 View the original and humanized text side-by-side after processing.
               </CardDescription>
             </CardHeader>
@@ -169,14 +219,29 @@ export default function AIGuardPage() {
                     </ScrollArea>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2 text-foreground">Humanized Text</h4>
-                    <ScrollArea className="h-72 p-3 border rounded-md bg-background shadow-inner">
-                       <pre className="whitespace-pre-wrap text-sm font-mono">{humanizedText}</pre>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold text-foreground">Humanized Text</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-muted-foreground hover:text-accent"
+                        onClick={() => copyToClipboard(humanizedText)}
+                      >
+                        {hasCopied ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Copy to clipboard</span>
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-72 p-3 border rounded-md bg-background shadow-inner relative group">
+                      <pre className="whitespace-pre-wrap text-sm font-mono">{humanizedText}</pre>
                     </ScrollArea>
                     {isRewritten === false && (
-                       <p className="text-xs text-center text-muted-foreground mt-2 italic">
-                         AI determined the original text was already human-like.
-                       </p>
+                      <p className="text-xs text-center text-muted-foreground mt-2 italic">
+                        AI determined the original text was already human-like.
+                      </p>
                     )}
                   </div>
                 </div>
@@ -196,9 +261,8 @@ export default function AIGuardPage() {
         </div>
       </main>
 
-      <footer className="text-center p-6 text-sm text-muted-foreground border-t mt-8">
-        Powered by AIGuard &copy; {new Date().getFullYear()}
-      </footer>
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

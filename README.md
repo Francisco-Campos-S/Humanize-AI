@@ -4,7 +4,7 @@ Humanize AI is a powerful tool designed to transform AI-generated content into n
 
 ## Technology Stack
 
-- **Frontend**: Built with [React](https://reactjs.org/) and [Next.js](https://nextjs.org/), providing a robust and scalable user interface.
+- **Frontend**: Built with [Next.js](https://nextjs.org/), providing a robust and scalable user interface.
 - **Styling**: Utilizes [Tailwind CSS](https://tailwindcss.com/) for efficient and responsive design.
 - **AI Integration**: Powered by [Google AI](https://ai.google/) through the `genkit` library, enabling sophisticated content analysis and transformation.
 - **State Management**: Managed using React's built-in state management capabilities.

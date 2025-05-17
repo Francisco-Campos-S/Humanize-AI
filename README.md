@@ -25,7 +25,7 @@ Humanize AI is a powerful tool designed to transform AI-generated content into n
 To get started, clone the repository and install the dependencies:
 
 ```bash
-git clone https://github.com/yourusername/humanize-ai.git
+git clone https://github.com/Pratham-Prog861/humanize-ai.git
 cd humanize-ai
 npm install
 ```

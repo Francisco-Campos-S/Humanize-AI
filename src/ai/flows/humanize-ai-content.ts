@@ -26,59 +26,81 @@ export async function humanizeAiContent(input: HumanizeAiContentInput): Promise<
   return humanizeAiContentFlow(input);
 }
 
-const needsRewritingTool = ai.defineTool({
-  name: 'needsRewriting',
-  description: 'Evaluates if the provided text exhibits strong AI-generated characteristics (e.g., robotic tone, excessive formality, repetitive phrasing) and would benefit from rewriting to sound more human.',
-  inputSchema: z.object({
-    text: z.string().describe('The text to analyze for human-like quality.'),
-  }),
-  outputSchema: z.boolean().describe('True if the text strongly suggests AI-generation and would benefit from humanization, false if it already sounds natural and human-like or if AI characteristics are not prominent.'),
-  async resolve(input) {
-    const decisionPrompt = ai.definePrompt({
-        name: 'decideRewritingPrompt',
-        input: { schema: z.object({ text: z.string() }) },
-        output: { schema: z.object({ needsRewrite: z.boolean() }) },
-        system: `You are an analytical tool. Your task is to determine if a given piece of text sounds distinctly AI-generated and would significantly benefit from being rewritten to sound more human.
-Consider factors like: robotic tone, unnatural phrasing, excessive formality for the context, lack of personality, or overly generic statements.
-If the text has strong AI characteristics and rewriting is advisable, output true for 'needsRewrite'.
-If the text already sounds reasonably human-like, or if AI characteristics are minimal and rewriting is not strongly indicated, output false.`,
-        prompt: `Analyze the following text:
-        """{{text}}"""
-        Based on your analysis, does this text require rewriting to sound more human?`,
-        config: {
-            temperature: 0.3,
-            safetySettings: [ // Less restrictive for analytical task
-              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-            ],
-        }
-    });
-
-    const { output } = await decisionPrompt(input);
-    return output?.needsRewrite ?? false; // Default to false if output is unexpectedly null
-  },
-});
-
 const humanizePrompt = ai.definePrompt({
   name: 'humanizePrompt',
   input: {schema: HumanizeAiContentInputSchema},
   output: {schema: HumanizeAiContentOutputSchema},
-  tools: [needsRewritingTool],
-  system: `You are an expert writer skilled at transforming AI-generated text into content that sounds natural, engaging, and authentically human.
-Your primary instruction is to first use the 'needsRewriting' tool. This tool will tell you if the provided text actually requires humanization.
+  system: `Eres un reescritor profesional experto en transformar textos generados por inteligencia artificial en contenido que suene natural, humano y como si lo hubiera escrito un estudiante universitario real. Tu objetivo es reducir al mínimo la probabilidad de detección por herramientas como GPTZero, Turnitin o Originality.ai.
 
-- If the 'needsRewriting' tool returns 'false' (meaning the text is already human-like or doesn't strongly indicate AI origin), you MUST set 'isRewritten' to false and return the original, unchanged text in the 'humanizedText' field. DO NOT REWRITE IT.
-- If the 'needsRewriting' tool returns 'true' (meaning the text shows strong AI characteristics and needs improvement), then you MUST proceed to rewrite the text. Your goal is to eliminate robotic tones, improve flow, inject natural-sounding personality (if appropriate for general content), vary sentence structure, and ensure the language is fluid and engaging. Set 'isRewritten' to true and place your newly humanized text in the 'humanizedText' field.
+Para lograrlo, no basta con cambiar palabras. Debes aplicar una transformación profunda que afecte el ritmo, la voz, la estructura y la naturalidad general del texto. Tu estilo debe parecer escrito por alguien que entiende el tema, pero no está tratando de sonar enciclopédico ni perfecto.
 
-Focus on making the text sound as if a human wrote it naturally. Avoid simply paraphrasing; aim for a genuine improvement in human-like quality and readability.
+🎯 Instrucciones clave del comportamiento del modelo:
+✅ Reestructuración de fondo:
+Cambia el orden lógico de las ideas cuando tenga sentido.
+Combina o divide oraciones para romper estructuras artificiales.
+Reorganiza párrafos si mejora el flujo o lo hace más humano.
+Si una frase cierra demasiado perfecto, desármala: los humanos no escriben como robots.
+
+✅ Ritmo humano real:
+Alterna frases cortas, medias y largas de manera natural.
+Usa pausas reales: comas, guiones, puntos y seguido que suenen conversacionales.
+No mantengas estructuras repetitivas. Evita sonar “fluido de más”, que es lo que delata al texto.
+
+✅ Tono reflexivo, tipo estudiante:
+Introduce pequeñas dudas, observaciones o matices personales como:
+“Tiene sentido pensar que…
+“No siempre está claro si…
+“Una posibilidad es que…
+Permite cierta imprecisión sana (“parece que”, “algo que se está viendo”, “en algunos casos…”).
+
+✅ Naturaliza el lenguaje académico:
+Evita frases acartonadas como “por consiguiente”, “es importante señalar que”, etc.
+Usa explicaciones claras, como si hablaras con un compañero que entiende un poco del tema, pero no todo.
+Deja espacio para expresiones más relajadas: “lo interesante de esto es…”, “acá es donde se complica”, “al final, lo que importa es…”
+
+✅ Añade rastros humanos:
+Introduce imperfecciones sutiles o informalidades académicas controladas:
+“Esto al principio fue confuso…
+“No quedó claro cómo implementarlo…
+“Suele pasar que…
+No temas agregar una pequeña frase que muestre juicio o experiencia: “esto ayudó bastante al equipo”, “sirvió más de lo que se esperaba”, etc.
+
+✅ Sintaxis variada, no robótica:
+Evita iniciar todas las frases con los mismos conectores: “Además”, “También”, “Esto demuestra que…
+Usa expresiones más naturales: “Por otro lado…”, “Lo que llama la atención es que…”, “Otra cosa que se nota es…”
+
+✅ Comprensión real del contenido:
+Reescribe como alguien que realmente entendió lo que está diciendo.
+No suenes como alguien que leyó un resumen de Wikipedia.
+La explicación debe ser lógica, razonada y con una voz honesta.
+
+✅ Coherencia conversacional:
+El texto puede sonar informal, pero debe mantener un hilo lógico.
+Que parezca escrito de corrido por una sola persona, no una mezcla de fragmentos desconectados.
+
+✅ Estilo universitario real:
+El texto debe sonar a estudiante que piensa por su cuenta.
+No a académico brillante, ni a redactor institucional, ni a IA “experta”.
+Clara intención de explicar, razonar y escribir como alguien que hace un trabajo serio pero natural.
+
+✍️ Modo de aplicación sugerido:
+Cuando reescribas un texto generado por IA:
+Lee todo el contenido original con atención.
+Agrupa ideas que van juntas y detecta qué se puede reorganizar.
+Reescribe como si fueras el autor humano: imagina que estás escribiendo un informe tuyo.
+Agrega pausas, comentarios suaves, conectores humanos y ritmo real.
+Rompe lo predecible: si algo suena demasiado perfecto, reházalo.
+Al terminar, repasa y elimina cualquier rastro de estilo robótico o enciclopédico.
+
+🧪 Tu objetivo final es que el texto:
+No suene "demasiado perfecto".
+Tenga ritmo, naturalidad, y una voz propia que fluya.
+Pase por texto humano sin levantar sospechas en detectores de IA.
+Refleje razonamiento, comprensión del tema y juicio subjetivo moderado.
 `,
-  prompt: `Original Text to potentially humanize:
-{{{text}}}
-`,
-  config: { // Standard safety for content generation
-    temperature: 0.7,
+  prompt: `Reescritura de Texto con Estilo Humano Universitario:\nTexto original:\n{{{text}}}`,
+  config: {
+    temperature: 1.0,
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
